@@ -1,4 +1,9 @@
-﻿
+﻿##########################################################################
+# メモリー不足状態確認
+##########################################################################
+
+Param( [switch]$RecordLog, [switch]$Help )
+
 # ログの出力先
 $GC_LogPath = Convert-Path .
 # ログファイル名
@@ -53,17 +58,66 @@ function Log(
 function PageingCheck(){
 
 	# ページファイル場所確認
-	# /// ToDo
+	$SystemInfomation = Get-WmiObject -Class Win32_ComputerSystem
+
+	# ページファイル設定あり
+	if( $SystemInfomation.AutomaticManagedPagefile ){
+		# ページファイル情報
+		$PageFileInfo = Get-WmiObject -Class Win32_PageFileUsage
+		$PageFilePath = $PageFileInfo.Name
+
+		$Message = "[INFO] Page file path : $PageFilePath"
+		if( $RecordLog ){
+			Log $Message
+		}
+		else{
+			# echo only
+			[System.Console]::WriteLine($Message)
+		}
+
+		# ドライブレター
+		$PageFileDrive = Split-Path $PageFilePath -Qualifier
+		$PageFileDriveLetter = $PageFileDrive.Replace(":","")
+
+		# ページファイルが存在するディスク番号
+		$PageFilePartition = Get-Partition | ? { $_.DriveLetter -eq $PageFileDriveLetter }
+		$PageFileDiskNumber = $PageFilePartition.DiskNumber
+
+		$Message = "[INFO] Page file disk Number : $PageFileDiskNumber"
+		if( $RecordLog ){
+			Log $Message
+		}
+		else{
+			# echo only
+			[System.Console]::WriteLine($Message)
+		}
+
+		# ディスク カウンター
+		$CounterName = "\PhysicalDisk($PageFileDiskNumber $PageFileDrive)\Avg. Disk sec/Transfer"
+
+		$Message = "[INFO] Disk counter name : $CounterName"
+		if( $RecordLog ){
+			Log $Message
+		}
+		else{
+			# echo only
+			[System.Console]::WriteLine($Message)
+		}
+
+	}
+	# ページファイル設定なし
+	else{
+		echo "ページファイルが自動設定されていないか、手動設定になっています"
+		exit
+	}
 
 	# 状態チェック
 	while($true){
-		$DiskCounter = (Get-Counter "\PhysicalDisk(0 c:)\Avg. Disk sec/Transfer").CounterSamples.CookedValue
+		$DiskCounter = (Get-Counter $CounterName).CounterSamples.CookedValue
 		$MemoryCounter = (Get-Counter "\Memory\Pages/sec").CounterSamples.CookedValue
 		$Index = $DiskCounter * $MemoryCounter
 		$IndexString = $Index.Tostring("0.0000")
-		$OutputString = "(D)"+ $DiskCounter.Tostring("0.0000") + " * (M)" + $MemoryCounter.Tostring("#,0") + " = " + $IndexString
-		# $OutputString = "(D)"+ $DiskCounter + " * (P)" + $MemoryCounter + " = " + $IndexString
-
+		$OutputString = "(D)"+ $DiskCounter.Tostring("0.0000") + " * (P)" + $MemoryCounter.Tostring("#,0") + " = " + $IndexString
 
 		if( $MemoryCounter -ge 5 ){
 			$OutputString += " : 過剰ページング"
@@ -72,15 +126,36 @@ function PageingCheck(){
 			$OutputString += " / 著しいスローダウン"
 		}
 
-		Log "$OutputString"
+		if( $RecordLog ){
+			Log "$OutputString"
+		}
+		else{
+			# echo only
+			[System.Console]::WriteLine($OutputString)
+		}
 		Sleep 5
 	}
+}
+
+##########################################################################
+# help
+##########################################################################
+function Help(){
+	$HelpFile = Join-Path $PSScriptRoot "SlowDownCheckReadMe.txt"
+	Get-Content $HelpFile
+	exit
 }
 
 ##########################################################################
 # main
 ##########################################################################
 
+# ヘルプ表示
+if( $Help ){
+	Help
+}
+
+# ページング観察
 PageingCheck
 
 
