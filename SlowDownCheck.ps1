@@ -1,14 +1,19 @@
 ﻿##########################################################################
 # メモリー不足状態確認
 ##########################################################################
-
 Param( [switch]$RecordLog, [switch]$Help )
+
+# ページング閾値
+$GC_PageThreshold = 5
+
+# ディスク IO 割合閾値
+$GC_DiskThreshold = 0.1
+
 
 # ログの出力先
 $GC_LogPath = Convert-Path .
 # ログファイル名
 $GC_LogName = "SlowDownCheck"
-
 ##########################################################################
 # ログ出力
 ##########################################################################
@@ -114,10 +119,10 @@ function PageingCheck(){
 		$IndexString = $Index.Tostring("0.0000")
 		$OutputString = "(D)"+ $DiskCounter.Tostring("0.0000") + " * (P)" + $MemoryCounter.Tostring("#,0") + " = " + $IndexString
 
-		if( $MemoryCounter -ge 5 ){
+		if( $MemoryCounter -ge $GC_PageThreshold ){
 			$OutputString += " : 過剰ページング"
 		}
-		if( $Index -ge 0.1 ){
+		if( $Index -ge $GC_DiskThreshold ){
 			$OutputString += " / スローダウン"
 		}
 
