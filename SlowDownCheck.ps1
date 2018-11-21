@@ -118,7 +118,7 @@ function PageingCheck(){
 			$OutputString += " : 過剰ページング"
 		}
 		if( $Index -ge 0.1 ){
-			$OutputString += " / 著しいスローダウン"
+			$OutputString += " / スローダウン"
 		}
 
 		if( $RecordLog ){
