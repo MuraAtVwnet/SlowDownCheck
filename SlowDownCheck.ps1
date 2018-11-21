@@ -57,15 +57,10 @@ function Log(
 #>
 function PageingCheck(){
 
-	# ページファイル場所確認
-	$SystemInfomation = Get-WmiObject -Class Win32_ComputerSystem
-
-	# ページファイル設定あり
-	if( $SystemInfomation.AutomaticManagedPagefile ){
-		# ページファイル情報
-		$PageFileInfo = Get-WmiObject -Class Win32_PageFileUsage
-		$PageFilePath = $PageFileInfo.Name
-
+	# ページファイル情報
+	$PageFileInfo = Get-WmiObject -Class Win32_PageFileUsage
+	$PageFilePath = $PageFileInfo.Name
+	if( $PageFilePath -ne $null ){
 		$Message = "[INFO] Page file path : $PageFilePath"
 		if( $RecordLog ){
 			Log $Message
@@ -107,7 +102,7 @@ function PageingCheck(){
 	}
 	# ページファイル設定なし
 	else{
-		echo "ページファイルが自動設定されていないか、手動設定になっています"
+		echo "ページファイルが設定されていません"
 		exit
 	}
 
